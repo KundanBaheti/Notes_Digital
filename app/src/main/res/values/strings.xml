@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Notes Digital</string>
+    <string name="my_notes">My Notes</string>
+    <string name="searchNotes">Search notes</string>
+    <string name="notes_title">Note Title</string>
+    <string name="notes_subtitle">Notes Subtitle</string>
+    <string name="type_note_here">Type note here..</string>
+</resources>
