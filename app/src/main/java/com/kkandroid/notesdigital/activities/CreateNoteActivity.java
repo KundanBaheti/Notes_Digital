@@ -2,6 +2,7 @@ package com.kkandroid.notesdigital.activities;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -14,12 +15,16 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Patterns;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -37,6 +42,7 @@ import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class CreateNoteActivity extends AppCompatActivity {
     ImageView iv_back, ivSave;
@@ -48,13 +54,16 @@ public class CreateNoteActivity extends AppCompatActivity {
     private String selectedImagePathUri;
     private static final int REQUEST_CODE_FOR_STORAGE_PERMISSION = 1;
     private static final int REQUEST_CODE_SELECT_IMAGE = 2;
+    private TextView tvWebURL;
+    private LinearLayout layoutWebURL;
+    private AlertDialog dialogAddURL;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_note);
 
-        imageNote=findViewById(R.id.imageNote);
+        imageNote = findViewById(R.id.imageNote);
 
         viewSubtitleColor = findViewById(R.id.viewSubtitleIndicator);
         iv_back = findViewById(R.id.imageBack);
@@ -64,6 +73,10 @@ public class CreateNoteActivity extends AppCompatActivity {
                 onBackPressed();
             }
         });
+
+        tvWebURL = findViewById(R.id.textWebURL);
+        layoutWebURL = findViewById(R.id.layoutWebURL);
+
 
         edtInputNoteTitle = findViewById(R.id.inputNoteTitle);
         edtInputNoteSubtitle = findViewById(R.id.inputNoteSubtitle);
@@ -105,6 +118,10 @@ public class CreateNoteActivity extends AppCompatActivity {
         note.setDatetime(tvDateTime.getText().toString());
         note.setColor(selectedNoteColor);
         note.setImage(selectedImagePathUri);
+        if (layoutWebURL.getVisibility()==View.VISIBLE){
+            note.setWebLink(tvWebURL.getText().toString());
+        }
+
 
         @SuppressLint("StaticFieldLeak")
         class SaveNoteTask extends AsyncTask<Void, Void, Void> {
@@ -212,7 +229,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             }
         });
 
-        LinearLayout llAddImage =layoutMisellaneous.findViewById(R.id.layoutAddImage);
+        LinearLayout llAddImage = layoutMisellaneous.findViewById(R.id.layoutAddImage);
         llAddImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -222,6 +239,15 @@ public class CreateNoteActivity extends AppCompatActivity {
                 } else {
                     selectImage();
                 }
+            }
+        });
+
+        LinearLayout llAddUrl = layoutMisellaneous.findViewById(R.id.layoutAddURL);
+        llAddUrl.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                showAddURLDialog();
             }
         });
 
@@ -255,20 +281,20 @@ public class CreateNoteActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode==REQUEST_CODE_SELECT_IMAGE&&resultCode==RESULT_OK){
-            if (data!=null){
-                Uri selectedImage=data.getData();
-                if (selectedImage!=null){
+        if (requestCode == REQUEST_CODE_SELECT_IMAGE && resultCode == RESULT_OK) {
+            if (data != null) {
+                Uri selectedImage = data.getData();
+                if (selectedImage != null) {
                     try {
-                        InputStream inputStream= getContentResolver().openInputStream(selectedImage);
-                        Bitmap bitmap= BitmapFactory.decodeStream(inputStream);
+                        InputStream inputStream = getContentResolver().openInputStream(selectedImage);
+                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                         imageNote.setImageBitmap(bitmap);
-                        imageNote.setVisibility(View.VISIBLE );
+                        imageNote.setVisibility(View.VISIBLE);
 
-                        selectedImagePathUri=getPathFromUri(selectedImage);
+                        selectedImagePathUri = getPathFromUri(selectedImage);
 
 
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         Toast.makeText(this, "Error on Image", Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -276,17 +302,56 @@ public class CreateNoteActivity extends AppCompatActivity {
         }
     }
 
-    private String getPathFromUri(Uri contentUri){
+    private String getPathFromUri(Uri contentUri) {
         String filePath;
-        Cursor cursor=getContentResolver().query(contentUri,null,null,null,null);
-        if (cursor==null){
-            filePath=contentUri.getPath();
-        }else {
+        Cursor cursor = getContentResolver().query(contentUri, null, null, null, null);
+        if (cursor == null) {
+            filePath = contentUri.getPath();
+        } else {
             cursor.moveToFirst();
-            int index=cursor.getColumnIndex("_data");
-            filePath=cursor.getString(index);
+            int index = cursor.getColumnIndex("_data");
+            filePath = cursor.getString(index);
             cursor.close();
         }
         return filePath;
+    }
+
+    private void showAddURLDialog() {
+        if (dialogAddURL == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(CreateNoteActivity.this);
+            View view = LayoutInflater.from(this).inflate(R.layout.layout_add_url, (ViewGroup) findViewById(R.id.layoutAddUrlContainer));
+            builder.setView(view);
+            dialogAddURL = builder.create();
+            if (dialogAddURL.getWindow() != null) {
+                dialogAddURL.getWindow().setBackgroundDrawable(new ColorDrawable(0));
+            }
+            final EditText inputUrl = view.findViewById(R.id.inputURL);
+            inputUrl.requestFocus();
+
+            view.findViewById(R.id.textAdd).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (inputUrl.getText().toString().trim().isEmpty()) {
+                        Toast.makeText(CreateNoteActivity.this, "Enter URL", Toast.LENGTH_SHORT).show();
+                    } else if (!Patterns.WEB_URL.matcher(inputUrl.getText().toString()).matches()) {
+                        Toast.makeText(CreateNoteActivity.this, "Enter Valid URL", Toast.LENGTH_SHORT).show();
+                    } else {
+                        tvWebURL.setText(inputUrl.getText().toString());
+                        layoutWebURL.setVisibility(View.VISIBLE);
+                        dialogAddURL.dismiss();
+                    }
+                }
+            });
+            view.findViewById(R.id.textCancel).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    dialogAddURL.dismiss();
+
+                }
+            });
+
+        }
+        dialogAddURL.show();
+
     }
 }
