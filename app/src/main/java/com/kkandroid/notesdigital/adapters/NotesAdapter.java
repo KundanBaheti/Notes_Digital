@@ -15,15 +15,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.kkandroid.notesdigital.R;
 import com.kkandroid.notesdigital.entities.Note;
+import com.kkandroid.notesdigital.listener.NotesListener;
 import com.makeramen.roundedimageview.RoundedImageView;
 
 import java.util.List;
 
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHolder> {
     private List<Note> noteList;
+    private NotesListener notesListener;
 
-    public NotesAdapter(List<Note> noteList) {
+//    public NotesAdapter(List<Note> noteList) {
+//        this.noteList = noteList;
+//    }
+
+    public NotesAdapter(List<Note> noteList, NotesListener notesListener) {
         this.noteList = noteList;
+        this.notesListener = notesListener;
     }
 
     @NonNull
@@ -34,7 +41,13 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
 
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
-    holder.setNote(noteList.get(position));
+        holder.setNote(noteList.get(position));
+        holder.llAdapter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                notesListener.onNoteClicked(noteList.get(position), position);
+            }
+        });
     }
 
     @Override
@@ -53,15 +66,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
         private RoundedImageView rivImageNote;
 
 
-
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
 
             tvTextTitle = itemView.findViewById(R.id.textTitle);
             tvTextSubtitle = itemView.findViewById(R.id.textSubtitle);
             tvTextDateTime = itemView.findViewById(R.id.textDateTime);
-            llAdapter=itemView.findViewById(R.id.layout_note);
-            rivImageNote=itemView.findViewById(R.id.imageNote);
+            llAdapter = itemView.findViewById(R.id.layout_note);
+            rivImageNote = itemView.findViewById(R.id.imageNote);
 
 
         }
@@ -75,17 +87,17 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NoteViewHold
             }
             tvTextDateTime.setText(note.getDatetime());
 
-            GradientDrawable gradientDrawable=(GradientDrawable)llAdapter.getBackground();
-            if (note.getColor()!=null){
+            GradientDrawable gradientDrawable = (GradientDrawable) llAdapter.getBackground();
+            if (note.getColor() != null) {
                 gradientDrawable.setColor(Color.parseColor(note.getColor()));
-            }else {
+            } else {
                 gradientDrawable.setColor(Color.parseColor("#333333"));
             }
 
-            if (note.getImage()!=null){
+            if (note.getImage() != null) {
                 rivImageNote.setImageBitmap(BitmapFactory.decodeFile(note.getImage()));
                 rivImageNote.setVisibility(View.VISIBLE);
-            }else {
+            } else {
                 rivImageNote.setVisibility(View.GONE);
             }
         }

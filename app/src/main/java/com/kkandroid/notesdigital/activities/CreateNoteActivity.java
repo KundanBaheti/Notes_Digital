@@ -58,6 +58,8 @@ public class CreateNoteActivity extends AppCompatActivity {
     private LinearLayout layoutWebURL;
     private AlertDialog dialogAddURL;
 
+    private Note alreadyAvailableNote;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,6 +89,11 @@ public class CreateNoteActivity extends AppCompatActivity {
                         .format(new Date())
         );
 
+        if (getIntent().getBooleanExtra("isViewOrUpdate", false)) {
+            alreadyAvailableNote = (Note) getIntent().getSerializableExtra("note");
+            setViewOrUpdateNote();
+        }
+
         ivSave = findViewById(R.id.imageSave);
         ivSave.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -102,6 +109,23 @@ public class CreateNoteActivity extends AppCompatActivity {
 
     }
 
+    private void setViewOrUpdateNote() {
+        edtInputNoteTitle.setText(alreadyAvailableNote.getTitle());
+        edtInputNoteSubtitle.setText(alreadyAvailableNote.getSubtitle());
+        edtInputNoteText.setText(alreadyAvailableNote.getNoteText());
+        tvDateTime.setText(alreadyAvailableNote.getDatetime());
+        if (alreadyAvailableNote.getImage() != null && !alreadyAvailableNote.getImage().trim().isEmpty()) {
+            imageNote.setImageBitmap(BitmapFactory.decodeFile(alreadyAvailableNote.getImage()));
+            imageNote.setVisibility(View.VISIBLE);
+            selectedImagePathUri = alreadyAvailableNote.getImage();
+        }
+
+        if (alreadyAvailableNote.getWebLink() != null && !alreadyAvailableNote.getWebLink().trim().isEmpty()) {
+            tvWebURL.setText(alreadyAvailableNote.getWebLink());
+            layoutWebURL.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void saveNote() {
         if (edtInputNoteTitle.getText().toString().trim().isEmpty()) {
             Toast.makeText(this, "Note title can't be empty", Toast.LENGTH_SHORT).show();
@@ -111,6 +135,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             return;
         }
 
+
         final Note note = new Note();
         note.setTitle(edtInputNoteTitle.getText().toString());
         note.setSubtitle(edtInputNoteSubtitle.getText().toString());
@@ -118,10 +143,12 @@ public class CreateNoteActivity extends AppCompatActivity {
         note.setDatetime(tvDateTime.getText().toString());
         note.setColor(selectedNoteColor);
         note.setImage(selectedImagePathUri);
-        if (layoutWebURL.getVisibility()==View.VISIBLE){
+        if (layoutWebURL.getVisibility() == View.VISIBLE) {
             note.setWebLink(tvWebURL.getText().toString());
         }
-
+        if (alreadyAvailableNote != null) {
+            note.setId(alreadyAvailableNote.getId());
+        }
 
         @SuppressLint("StaticFieldLeak")
         class SaveNoteTask extends AsyncTask<Void, Void, Void> {
@@ -228,6 +255,23 @@ public class CreateNoteActivity extends AppCompatActivity {
                 setViewSubtitleIndicatorColor();
             }
         });
+
+        if (alreadyAvailableNote != null && alreadyAvailableNote.getColor() != null && !alreadyAvailableNote.getColor().trim().isEmpty()) {
+            switch (alreadyAvailableNote.getColor()) {
+                case "#FDBE3B":
+                    layoutMisellaneous.findViewById(R.id.viewColor2).performClick();
+                    break;
+                case "#FF4842":
+                    layoutMisellaneous.findViewById(R.id.viewColor3).performClick();
+                    break;
+                case "#3A52FC":
+                    layoutMisellaneous.findViewById(R.id.viewColor4).performClick();
+                    break;
+                case "#000000":
+                    layoutMisellaneous.findViewById(R.id.viewColor5).performClick();
+                    break;
+            }
+        }
 
         LinearLayout llAddImage = layoutMisellaneous.findViewById(R.id.layoutAddImage);
         llAddImage.setOnClickListener(new View.OnClickListener() {
